@@ -1,6 +1,8 @@
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=YYGKKE6FDX2KY)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=YYGKKE6FDX2KY) [![Donate Bitcoin](https://img.shields.io/badge/Donate-Bitcoin-green.svg)](https://stockmind.github.io/donate-bitcoin/) [![Docker Build Statu](https://img.shields.io/docker/build/stockmind/gpd-pocket-ubuntu-respin.svg)]() [![Docker Automated buil](https://img.shields.io/docker/automated/stockmind/gpd-pocket-ubuntu-respin.svg)]()
 
 ![GPD Pocket Ubuntu](https://github.com/stockmind/gpd-pocket-ubuntu-respin/raw/master/screenshot.png)
+
+## Notice: My GPD Pocket has been shipped to GPD to get repaired. I continue to improve my scripts and develop/support even without the device, and will continue to do so. I really appreciate your support and donations! Thanks to you i can cover the shipping costs and all the clearance customs i will get on Pocket return. I really appreciate all of your help! This is an amazing community!
 
 # Update an installed system
 
@@ -17,7 +19,8 @@ Run [update script](#post-install) to install it automatically.
 # Have an issue?
 
 Check [Troubleshooting section.](#troubleshooting)
-If your problem persist or is not on the list check [Problem reporting section](#problem-reporting) before open an issue.
+Try to download this repository and run `update.sh` script and `update-kernel.sh` script to update system to latest working configuration. [Check update section.](#update-script)
+If your problem persist or is not on the troubleshooting list check [Problem reporting section](#problem-reporting) before open an issue.
 
 **Scripts on this repository are not compatible with Ansible-playbook setup due to rotation and other scripts that may conflict. Clean your system before use this.
 You may try this clean script at your own risk: [Clean Ansible Playbook script](https://github.com/stockmind/gpd-pocket-ubuntu-respin/blob/master/clean-ansible.sh)**
@@ -57,11 +60,15 @@ All informations, tips and tricks was gathered from:
  - ✔ **USB-C for data** ( Kernel version 4.14 or later )
  - ✔ TTY/Console font size reasonably bigger to improve readability ( Thanks joshskidmore for the intuition! - Worsk only on installed system and a "update.sh" run may be needed )
  - ✔ Trackpoint faster for a better experience right from the start ( Thanks rustige for config! )
+ - ✔ Bluetooth audio ( Kernel version 4.14-rc3 or later ) 
+ - ✔ **Audio aligned to Windows experience** ( Kernel version 4.14-rc3 with audio flag fix. See for previous issues: https://bugzilla.kernel.org/show_bug.cgi?id=196351 )
+ - ✔ **Headphones/Speakers auto switch on jack plugged in/out** 
  
 ### What Doesn't Work at the Moment
 
- - Bluetooth audio ( Need further testing and experience, audio on bluetooth seems to work for just 10 seconds then crash ) 
- - Audio crackling on high volumes ( Bug: https://bugzilla.kernel.org/show_bug.cgi?id=196351 )
+ - Audio on hdmi ( Need feedback )
+ - Hibernation ( Need feedback )
+ - USB-C as video output
  
 ### Overview for Building and Respinning an ISO
 
@@ -80,6 +87,13 @@ At the moment no BIOS update is required to run Ubuntu respin iso.
 You can run any BIOS you want and you probably won't notice big differences.
 Different BIOS have however different features enabled. Check BIOS section [here](#bios-updates-and-original-firmwares)
 
+## Respin iso and build kernels with Docker
+
+![Docker](https://github.com/stockmind/gpd-pocket-ubuntu-respin/raw/master/Docker.png)
+
+[Click here for the Docker building section](#build-with-docker)
+
+## Build and respin without Docker
 ## Step 1: Cloning the Repo and Installing Tools
 
 To respin an existing Ubuntu ISO, you will need to use a Linux machine with `squashfs-tools` and `xorriso` installed (e.g. `sudo apt install -y squashfs-tools xorriso`) and a working internet connection with at least 10GB of free space.
@@ -133,6 +147,7 @@ Then proceed with building:
 
 ```
 cd linux-sunxi/
+sed -i "s|CONFIG_INTEL_ATOMISP=y|CONFIG_INTEL_ATOMISP=n|" .config # Fix audio crackling
 make clean
 make -j `getconf _NPROCESSORS_ONLN` deb-pkg LOCALVERSION=-custom   
 ```
@@ -210,7 +225,7 @@ That's the reason of the "gnome" argument for update and build script.
 Update kernel to latest version issuing the following command:
 
 ```
-sudo ./update-kernel.sh gnome
+sudo ./update-kernel.sh
 ```
 
 A kernel update is always recommended.
@@ -275,6 +290,7 @@ Latest versions are available here: http://www.gpd.hk/news.asp?id=1519&selectcla
            1 - This BIOS has changed the boot logic. In the previous BIOS device will boot only with a charge of 10 to 17%, now you only need at least some charge to boot. 
            
 ### Updating the BIOS
+
 1. Download the latest BIOS
 2. Install the flashing utility
 ```
@@ -352,6 +368,72 @@ You can monitor frequencies of cpu issuing:
 cat /sys/bus/cpu/devices/cpu*/cpufreq/scaling_cur_freq
 ```
 
+# Build with Docker
+
+![Docker](https://github.com/stockmind/gpd-pocket-ubuntu-respin/raw/master/Docker.png)
+
+You can respin iso and build kernels on a Docker environment easily. This build system will likely work on any x86 Docker supported platform. Tested and working on Linux and MacOS, builds on Windows not tested yet.
+
+You just need to build the Docker image, or download it from Docker Hub, and follow the steps below.
+
+## 1a. Download image from Docker Hub
+
+```
+docker pull stockmind/gpd-pocket-ubuntu-respin
+```
+
+## 1b. Or build the Docker image locally
+
+Clone repository and run the following script to build the docker image
+
+```
+./docker-build-image.sh
+```
+
+Once the image is ready you can choose from the following steps:
+
+## 2a. Respin ISO
+
+To respin an ISO you need to place desired ISO in ```origin/``` folder of this repository then run:
+
+a. Distro based on Unity, KDE, XFCE as Desktop Environment:    
+```
+./docker-respin.sh <iso-file-name-without-path>
+```
+b. Distro based on GNOME, Pantheon (Elementary OS) as Desktop Environment:
+```
+./docker-respin.sh <iso-file-name-without-path> gnome
+```
+
+Example:
+```
+./docker-respin.sh ubuntu-17.04-desktop-amd64.iso
+```
+Or:
+```
+./docker-respin.sh ubuntu-GNOME-17.04-desktop-amd64.iso gnome
+```
+
+Let it run, it will take from 10 to 30 minutes based on your internet connection and system speed.
+Once done you will find output ISO in ```destination/``` folder of this repository named as  ```gpdpocket-<build-date>-<iso-file-name>.iso```.
+
+## 2b. Build latest kernel
+
+To build latest kernel you just need to run the following script:
+```
+./docker-build-kernel.sh
+```
+
+Let it run, it will take a while.
+When it's done you can find the kernel zipped in ```destination/``` folder of this repository.
+
+## Stop running containers
+
+If you made a mistake and want to stop the running containers in background for respinning or building you can use the stop script:
+```
+./docker-stop.sh
+```
+
 # Troubleshooting
 
 ## Blank screen on Live USB boot and white power led on
@@ -383,6 +465,10 @@ It should be "Speakers: chtrt5645" for device speakers and "Headphones: chtrt564
 ## Video glitches and overlapping desktops when HDMI connected
 
 Check your system displays settings and move your displays until they are not overlapping each others.
+
+## System freeze or hangs on high temperatures, high load or randomly
+
+Disable DPTF in BIOS (Unlocked BIOS might be required), that's what freezes the system before it reaches the hardcoded factory limit of 90 degree. 
 
 ## Why is system UI so big?
 
@@ -440,4 +526,10 @@ sudo ./problem-reporting.sh
 
 If my work helped you consider a little donation to buy me a coffe... or an energy drink! :smile:
 
+**Paypal**
+
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=YYGKKE6FDX2KY)
+
+**Bitcoin**
+
+[![Donate Bitcoin](https://stockmind.github.io/donate-bitcoin/bitcoin-button.png)](https://stockmind.github.io/donate-bitcoin/)

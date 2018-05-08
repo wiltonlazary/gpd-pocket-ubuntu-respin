@@ -1,21 +1,37 @@
 #!/bin/bash
 
 ISOFILE=$1
+LATESTKERNEL="gpdpocket-20180306-4.16.0-rc3-kernel-files.zip"
+LOCALKERNEL="gpdpocket-kernel-files.zip"
+ARGS="-l \"*.deb\""
 
 # Check arguments
 for i in "$@" ; do
     if [[ $i == "gnome" ]] ; then
         echo "Setting gnome monitors..."
-        GNOME=$i
-        break
+        GNOME=true
+        continue
     fi
-    if [[ $i == "kali" ]] ; then
-    	echo "Setting kali environment..."	
-    	KALI=true
-    	break
+    if [[ $i == "unity" ]] ; then
+    	echo "Setting unity environment..."	
+    	UNITY=true
+    	continue
+    fi	
+    if [[ $i == "bionicbeaver" ]] ; then
+    	echo "Setting Bionic Beaver environment..."	
+    	BIONICBEAVER=true
+    	continue
+    fi	
+    if [[ $i == "mainline" ]] ; then
+    	echo "Setting mainline kernel environment..."	
+    	ARGS="-u"
+    	MAINLINE=true
+    	continue
     fi	
 done
 
+# Select correct monitors file based on Desktop Environment kind
+# GNOME or Desktop Environments on Wayland require a special monitors file
 if [ -n "$GNOME" ]; then
 	echo "Display setting: Gnome"
 	cp display/monitors_gnome.xml display/monitors.xml
@@ -24,50 +40,80 @@ else
 	cp display/monitors_xorg.xml display/monitors.xml
 fi
 
+# Remove old files
 ./clean.sh
 
+# Looking for kernel packages and download them if required
 if [ ! -f linux-image* ]; then
-    echo "Looking for kernel image..."
-    if [ ! -f gpd-pocket-kernel-files.zip ]; then
-	 if [ ! -f gpdpocket-20171010-kernel-files-audio-fix.zip ]; then
-	    echo "Downloading kernel files...."
-	    wget https://bitbucket.org/simone_nunzi/gpdpocket-kernel/downloads/gpdpocket-20171010-kernel-files-audio-fix.zip
+	if [ ! -n "$MAINLINE" ]; then
+	    echo "Looking for kernel image..."
+	    if [ ! -f "$LOCALKERNEL" ]; then
+			if [ ! -f "$LATESTKERNEL" ]; then
+				echo "Downloading kernel files...."
+				wget "https://bitbucket.org/simone_nunzi/gpdpocket-kernel/downloads/$LATESTKERNEL"
+			fi
+			echo "Extracting latest kernel files..."
+		    unzip -o "$LATESTKERNEL"
+	    else	    
+	        echo "Extracting custom kernel files..."
+	        unzip -o "$LOCALKERNEL"
+	    fi	
 	fi
-	echo "Extracting kernel files..."
-    	unzip -o gpdpocket-20171010-kernel-files-audio-fix.zip
-    else	    
-        echo "Extracting custom kernel files..."
-        unzip -o gpd-pocket-kernel-files.zip
-    fi	
 fi
 
+# If missing, download latest version of the script that will respin the ISO
 if [ ! -f isorespin.sh ]; then
 	echo "Isorespin script not found. Downloading it..."
 	wget -O isorespin.sh "https://drive.google.com/uc?export=download&id=0B99O3A0dDe67S053UE8zN3NwM2c"
 fi
 
-packages="xfonts-terminus "
-packages+="thermald "
-packages+="tlp "
-packages+="va-driver-all "
-packages+="vainfo "
-packages+="libva1 "
-packages+="i965-va-driver "
-packages+="gstreamer1.0-libav "
-packages+="gstreamer1.0-vaapi "
-packages+="vlc "
-packages+="python-gi "
-packages+="gksu "
-packages+="git "
-packages+="python "
-packages+="gir1.2-appindicator3-0.1"
+# Packages that will be installed:
+# Font used to scale TTY text to a resonable size during boot/TTY work
+installpackages="xfonts-terminus "
+# Thermal management stuff and packages
+installpackages+="thermald "
+installpackages+="tlp "
+# Streaming and codecs for correct video encoding/play
+installpackages+="va-driver-all "
+installpackages+="vainfo "
+
+if [ -n "$BIONICBEAVER" ]; then
+	installpackages+="libva2 "
+else
+	installpackages+="libva1 "
+fi
+
+installpackages+="i965-va-driver "
+installpackages+="gstreamer1.0-libav "
+installpackages+="gstreamer1.0-vaapi "
+# Useful music/video player with large set of codecs
+installpackages+="vlc "
+# Utilities for traybar rotation indicator and fan handling
+installpackages+="python-gi " # Required by traybar rotation indicator
+installpackages+="git " # Required by traybar rotation indicator to download repository
+installpackages+="python " # Required by traybar rotation indicator & fan script
+installpackages+="gir1.2-appindicator3-0.1 " # Required by traybar rotation indicator
+
+# Packages that will be removed:
+removepackages="bcmwl-kernel-source " # This may conflict with wifi provided driver and blacklist it
+
+# If Unity is requested, install it and remove other Display Manager to avoid conflicts
+if [ -n "$UNITY" ]; then
+	echo "Display setting: Unity"
+
+	installpackages+="unity "
+	installpackages+="lightdm "
+
+	removepackages+="gdm "
+	removepackages+="gdm3 "
+	removepackages+="sddm "
+fi
 
 chmod +x isorespin.sh
 
-./isorespin.sh -i $ISOFILE \
-	-l "*.deb" \
-	-e "bcmwl-kernel-source" \
-	-p "$packages" \
+./isorespin.sh $ARGS -i $ISOFILE \
+	-e "$removepackages" \
+	-p "$installpackages" \
 	-f display/20-intel.conf \
 	-f display/30-monitor.conf \
 	-f display/35-screen.conf \
@@ -99,4 +145,4 @@ chmod +x isorespin.sh
 	-c wrapper-network.sh \
 	-c wrapper-power.sh \
 	-g "" \
-	-g "i915.fastboot=1 i915.semaphores=1 fbcon=rotate:1"
+	-g "i915.fastboot=1 i915.semaphores=1 fbcon=rotate:1 gpd-pocket-fan.speed_on_ac=0"

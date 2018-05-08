@@ -9,7 +9,12 @@ fi
 for i in "$@" ; do
     if [[ $i == "gnome" ]] ; then
         echo "Setting gnome monitors..."
-        GNOME=$i
+        GNOME=true
+        break
+    fi
+    if [[ $i == "kde" ]] ; then
+        echo "Setting kde environment..."
+        KDE=true
         break
     fi
 done
@@ -22,13 +27,18 @@ else
 	cp display/monitors_xorg.xml display/monitors.xml
 fi
 
+# refresh packages list
+apt update
+
 # remove conflicting packages
 echo "Remove conflicting packages..."
 apt-get -y purge bcmwl-kernel-source
 
 # install required packages
 echo "Install required packages..."
-apt-get -y install thermald tlp va-driver-all vainfo libva1 i965-va-driver gstreamer1.0-libav gstreamer1.0-vaapi python-gi gksu git python gir1.2-appindicator3-0.1 xfonts-terminus
+for i in thermald tlp va-driver-all vainfo libva1 libva2 i965-va-driver gstreamer1.0-libav gstreamer1.0-vaapi python-gi gksu git python gir1.2-appindicator3-0.1 xfonts-terminus xinput; do
+  sudo apt-get install -y $i
+done
 
 # remove old display files
 echo "Remove old configuration files..."
@@ -42,6 +52,10 @@ cp 90-scale /etc/X11/Xsession.d/90-scale
 cp 90-interface /etc/X11/Xsession.d/90-interface
 chmod 644 /etc/X11/Xsession.d/90-scale
 chmod 644 /etc/X11/Xsession.d/90-interface
+
+# Make xorg conf directory if doesn't exists
+mkdir -p /etc/X11/xorg.conf.d/
+
 cp 20-intel.conf /etc/X11/xorg.conf.d/20-intel.conf
 cp 30-monitor.conf /etc/X11/xorg.conf.d/30-monitor.conf
 cp 35-screen.conf /etc/X11/xorg.conf.d/35-screen.conf
@@ -111,20 +125,29 @@ if [ -f /usr/share/sddm/scripts/Xsetup ]; then
     sed -i "s|GDK_SCALE=2||" /etc/environment 
   fi
 fi
-  
-# check that environment variable exists
-echo "Adding envrironment variables to prevent glitches..."
-if grep -Fxq "COGL_ATLAS_DEFAULT_BLIT_MODE=framebuffer" /etc/environment
-then 
-  echo "Environment variable COGL_ATLAS_DEFAULT_BLIT_MODE already set"
+
+if [ -n "$KDE" ]; then
+  echo "KDE flag provided. No environemnt variable is needed."
+  echo "Remove environment variable COGL_ATLAS_DEFAULT_BLIT_MODE"
+  sed -i "s|COGL_ATLAS_DEFAULT_BLIT_MODE=framebuffer||" /etc/environment 
+  echo "Remove environment variable LIBGL_DRI3_DISABLE"
+  sed -i "s|LIBGL_DRI3_DISABLE=1||" /etc/environment
+  # On KDE the following flags seems to give problems.
 else
-  echo "COGL_ATLAS_DEFAULT_BLIT_MODE=framebuffer" >> /etc/environment
-fi
-if grep -Fxq "LIBGL_DRI3_DISABLE=1" /etc/environment
-then
-  echo "Environment variable LIBGL_DRI3_DISABLE already set"
-else
-  echo "LIBGL_DRI3_DISABLE=1" >> /etc/environment   
+  # check that environment variable exists
+  echo "Adding envrironment variables to prevent glitches..."
+  if grep -Fxq "COGL_ATLAS_DEFAULT_BLIT_MODE=framebuffer" /etc/environment
+  then 
+    echo "Environment variable COGL_ATLAS_DEFAULT_BLIT_MODE already set"
+  else
+    echo "COGL_ATLAS_DEFAULT_BLIT_MODE=framebuffer" >> /etc/environment
+  fi
+  if grep -Fxq "LIBGL_DRI3_DISABLE=1" /etc/environment
+  then
+    echo "Environment variable LIBGL_DRI3_DISABLE already set"
+  else
+    echo "LIBGL_DRI3_DISABLE=1" >> /etc/environment   
+  fi
 fi
 
 cd ..
@@ -211,6 +234,7 @@ cp HiFi.conf /usr/share/alsa/ucm/chtrt5645/
 cp chtrt5645.conf /usr/share/alsa/ucm/chtrt5645/
 
 # copy headphones/speakers auto switch when jack is plugged in/out
+mkdir -p /etc/acpi/events/
 cp headphone-jack /etc/acpi/events/headphone-jack
 cp headphone-jack.sh /etc/acpi/headphone-jack.sh
 chmod +x /etc/acpi/headphone-jack.sh
@@ -240,8 +264,8 @@ else
 fi
 
 # update grub
-sudo sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet splash\"/GRUB_CMDLINE_LINUX_DEFAULT=\"\"/" /etc/default/grub
 sudo sed -i "s/#GRUB_GFXMODE=640x480/GRUB_GFXMODE=640x480/" /etc/default/grub
-sudo sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"i915.fastboot=1 i915.semaphores=1 fbcon=rotate:1\"/" /etc/default/grub
-sudo sed -i "s/GRUB_CMDLINE_LINUX=\"i915.fastboot=1 i915.semaphores=1\"/GRUB_CMDLINE_LINUX=\"i915.fastboot=1 i915.semaphores=1 fbcon=rotate:1\"/" /etc/default/grub
+sudo sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"i915.fastboot=1 i915.semaphores=1 fbcon=rotate:1 gpd-pocket-fan.speed_on_ac=0\"/" /etc/default/grub
+sudo sed -i "s/GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX=\"i915.fastboot=1 i915.semaphores=1 fbcon=rotate:1 gpd-pocket-fan.speed_on_ac=0\"/" /etc/default/grub
+
 sudo update-grub

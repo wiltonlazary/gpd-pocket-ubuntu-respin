@@ -4,6 +4,7 @@
 SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
 INPUTDIR="$SCRIPTPATH""/origin"
 OUTPUTDIR="$SCRIPTPATH""/destination"
+PAR1=$1
 
 echo "Input dir: $INPUTDIR"
 echo "Output dir: $OUTPUTDIR"
@@ -19,7 +20,12 @@ else
 	exit 1
 fi
 
+# If no arg specified we use the custom kernel config provided in this repository
+if [ "$1" != 'keepconfig' ]; then
+	cp "$SCRIPTPATH"/kernel/.config "$INPUTDIR"/.config
+fi
+
 # Refresh container
 docker rm $(docker ps -aq --filter name=gpd-pocket-kernel-container)
 # Run command
-docker run -t -v "$INPUTDIR":/docker-input -v "$OUTPUTDIR":/docker-output --name gpd-pocket-kernel-container "$IMAGENAME" kernel
+docker run --rm -t -v "$INPUTDIR":/docker-input -v "$OUTPUTDIR":/docker-output --name gpd-pocket-kernel-container "$IMAGENAME" kernel "$PAR1"

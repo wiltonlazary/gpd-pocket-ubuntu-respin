@@ -2,12 +2,30 @@
 
 ![GPD Pocket Ubuntu](https://github.com/stockmind/gpd-pocket-ubuntu-respin/raw/master/screenshot.png)
 
-## Notice: My GPD Pocket has been shipped to GPD to get repaired. I continue to improve my scripts and develop/support even without the device, and will continue to do so. I really appreciate your support and donations! Thanks to you i can cover the shipping costs and all the clearance customs i will get on Pocket return. I really appreciate all of your help! This is an amazing community!
-
 # Update an installed system
 
 You can update an installed system using the update commands here:
 [Update steps](#post-install)
+
+# Warning: Ubuntu 17.10 Issues
+
+Ubuntu 17.10 ships with GNOME 3 as default desktop environment. There are several issues and things that doesn't work as expected at the moment (Scaling, rotation after sleep/login, random missing characters, graphical glitches etc...). I suggest you to install Unity and use LightDM as login/display manager until GNOME gets updated with latest patches.
+
+You can do that issuing: 
+
+    sudo apt install unity lightdm
+    
+And select "LightDM" instead of "GDM" when prompted. 
+
+**On first login after Unity and LightDM install, click on the big "circle" icon near your username and select "Unity"  as Desktop Environment.**
+
+An experimental ISO of Ubuntu 17.10 with Unity preinstalled as default DE can be found in the [downloads section](#downloading-existing-isos) (First mirror gpdpocket.cre.ovh)
+
+# Check kernel builds by Petr Matula
+
+[Petr Matula kernel repository](https://github.com/petrmatula190/gpd-pocket-kernel)
+
+Petr Matula is kindly starting building kernels with greater frequency than my releases, if you need/want an updated kernel without have to wait try his builds! He have an easy script to download and install the packages.
 
 # Check new rotation script and tray icon!
 ![GPD Pocket Screen rotation utility](https://github.com/stockmind/gpd-pocket-screen-indicator/raw/master/screenshot.png)
@@ -25,12 +43,13 @@ If your problem persist or is not on the troubleshooting list check [Problem rep
 **Scripts on this repository are not compatible with Ansible-playbook setup due to rotation and other scripts that may conflict. Clean your system before use this.
 You may try this clean script at your own risk: [Clean Ansible Playbook script](https://github.com/stockmind/gpd-pocket-ubuntu-respin/blob/master/clean-ansible.sh)**
 
-
 # How to Respin an ISO for GPD Pocket
 ## Overview
 This is a collection of scripts and tweaks to adapt Ubuntu and Linux Mint ISO images and let them run smoothly on GPD Pocket.
 
 All informations, tips and tricks was gathered from:
+ - https://www.reddit.com/r/GPDPocket/ - Reddit GPD Pocket community
+ - https://www.facebook.com/groups/144602682766328/ - GPD Pocket Facebook Group
  - https://www.reddit.com/r/GPDPocket/comments/6idnia/linux_on_gpd_pocket/ - Chrisawcom base project files and amazing collection of tips and tricks to get all up and running
  - http://linuxiumcomau.blogspot.com/ - Respin script and info
  - http://hansdegoede.livejournal.com/ - Kernel patches and amazing work on Bay Trail and Cherry Trail devices
@@ -43,17 +62,17 @@ All informations, tips and tricks was gathered from:
 ### What Works Out-of-the-Box
 
  - ✔ Display already rotated in terminal buffer and desktop/login ( Hans de Goede kernel patch, monitors.xml file and rotation daemon based on initial work of *Chrisawcom* )
- - ✔ Scaling already set to 175%
+ - ✔ Scaling already set to 175% ( [Check scale section to customize it](#why-is-system-ui-so-big) )
  - ✔ Touchscreen aligned to rotation ( [Check new rotation script and tray icon](https://github.com/stockmind/gpd-pocket-screen-indicator) )
  - ✔ Multitouch ( [Check multitouch section  for more information](#multitouch) )
  - ✔ Wifi
  - ✔ Speaker ( Must select "Speakers" in audio output devices if no sound output )
  - ✔ Headphones ( Must select "Headphones" in audio output devices, works only on kernel 4.13+ )
  - ✔ Battery manager
- - ✔ Screen brightness ( Only after install at the moment )
- - ✔ Cooling fan ( Amazing initial work of *ErikaFluff*, rewritten in Python by *Chrisawcom*! Check post installation section of this readme to optimize it )
+ - ✔ Screen brightness ( **Working on Live environments too with kernel 4.15-rc5 or higher** )
+ - ✔ Cooling fan ( Amazing initial work of *ErikaFluff*, rewritten in Python by *Chrisawcom*! Check this [GPD Fan Daemon](#gpd-fan-daemon-fail-to-run) and this [GPD Fan on AC](#gpd-fan-always-spinning-on-ac) for kernel 4.15+ )
  - ✔ Bluetooth ( Credits to Reddit user *dveeden* )
- - ✔ Intel video driver for streaming without tearing or crash
+ - ✔ Intel video driver for streaming without tearing or crash ( [Check Google Chrome workaround](#google-chrome-tearing-glitch-or-flickering-while-scrolling-or-browsing-heavy-web-pages) )
  - ✔ Sleep/wake
  - ✔ HDMI port
  - ✔ Charging at full speed ([Check charging info for more information](#charging-info))
@@ -61,14 +80,18 @@ All informations, tips and tricks was gathered from:
  - ✔ TTY/Console font size reasonably bigger to improve readability ( Thanks joshskidmore for the intuition! - Worsk only on installed system and a "update.sh" run may be needed )
  - ✔ Trackpoint faster for a better experience right from the start ( Thanks rustige for config! )
  - ✔ Bluetooth audio ( Kernel version 4.14-rc3 or later ) 
- - ✔ **Audio aligned to Windows experience** ( Kernel version 4.14-rc3 with audio flag fix. See for previous issues: https://bugzilla.kernel.org/show_bug.cgi?id=196351 )
+ - ✔ **Audio aligned to Windows experience** ( Kernel version 4.14-rc3 with audio flag fix. See for previous issues: https://bugzilla.kernel.org/show_bug.cgi?id=196351, check also [Troubleshooting section for more informations](#audio-jack-disconnected-on-volume-over-70-80-windows-and-linux-same-behaviour-with-some-headphones) )
  - ✔ **Headphones/Speakers auto switch on jack plugged in/out** 
+ - ✔ **Internal Mic and Headphones Mic working** (Hans de Goede and Bard Liao great work! Kernel 4.15-rc5 or higher required) 
+ - ✔ **Touchscreen working after sleep/wake**
+ - ✔ Hibernation ( This seems to work on latest kernels, [check this issue for more informations](https://github.com/stockmind/gpd-pocket-ubuntu-respin/issues/93), Thanks samyongsj and geek78 for feedback and infos! )
  
 ### What Doesn't Work at the Moment
 
- - Audio on hdmi ( Need feedback )
- - Hibernation ( Need feedback )
+ - Audio on hdmi ( Need feedback, an alsa-lib >=1.1.5 version may be required to get it working )
  - USB-C as video output
+ - HDMI plugged before boot may cause issues (No video output on internal and external monitor, flickering, etc...)
+ - GDM rotation on re-login or after sleep (Use another display manager like LightDM or SDDM until this gets fixed)
  
 ### Overview for Building and Respinning an ISO
 
@@ -87,6 +110,8 @@ At the moment no BIOS update is required to run Ubuntu respin iso.
 You can run any BIOS you want and you probably won't notice big differences.
 Different BIOS have however different features enabled. Check BIOS section [here](#bios-updates-and-original-firmwares)
 
+**NOTE: Based on my experience the best BIOS version is the latest 2017/08/07 BIOS. It doesn't turn on fan at max when device is off and charging. It also let you boot on zero battery charge (previous versions require at least 15-20% of battery charge to boot). It seems also to fix the odds system "freeze" that some users encounter on unlocked BIOS.**
+
 ## Respin iso and build kernels with Docker
 
 ![Docker](https://github.com/stockmind/gpd-pocket-ubuntu-respin/raw/master/Docker.png)
@@ -96,7 +121,7 @@ Different BIOS have however different features enabled. Check BIOS section [here
 ## Build and respin without Docker
 ## Step 1: Cloning the Repo and Installing Tools
 
-To respin an existing Ubuntu ISO, you will need to use a Linux machine with `squashfs-tools` and `xorriso` installed (e.g. `sudo apt install -y squashfs-tools xorriso`) and a working internet connection with at least 10GB of free space.
+To respin an existing Ubuntu ISO, you will need to use a Linux machine with `squashfs-tools` and `xorriso` installed (e.g. `sudo apt install -y squashfs-tools xorriso`) and a working internet connection and at least 10GB of free storage space.
 
 The first step is to clone this repo: 
 ```
@@ -105,13 +130,13 @@ cd gpd-pocket-ubuntu-respin/
 ```
 ### Debian-based systems:
 
-Install required packages:
+Install all the required packages:
 ```
 sudo apt install -y git wget genisoimage bc squashfs-tools xorriso
 ```
 ### Arch-Based Systems:
 
-Install required packages:
+Install all the required packages:
 ``` 
 sudo pacman -S git wget cdrkit bc libisoburn squashfs-tools dosfstools
 ```
@@ -124,7 +149,7 @@ Download your favourite distribution ISO and copy it in this repository cloned f
 
 ### Option 1: Download the Latest Kernel
 
-1. Run `./build.sh` in the terminal to get the most recent kernel automatically.
+1. Running `./build.sh` in the terminal will download the most recent kernel automatically.
 
 ### Option 2: Build Your Own Kernel
 
@@ -143,17 +168,18 @@ git fetch origin
 git reset --hard origin/master
 ```
 
+**If you want to use the custom kernel config provided by this repository copy and overwrite `.config` that you can find in this repository in `kernel/.config` with `.config` file of Hans kernel repository**
+
 Then proceed with building:
 
 ```
 cd linux-sunxi/
-sed -i "s|CONFIG_INTEL_ATOMISP=y|CONFIG_INTEL_ATOMISP=n|" .config # Fix audio crackling
 make clean
 make -j `getconf _NPROCESSORS_ONLN` deb-pkg LOCALVERSION=-custom   
 ```
 You can find the generated kernel .deb files in the parent folder where linux-sunxi repository have been cloned.
 
-Compress all the .deb files generated into a zip named "gpd-pocket-kernel-files.zip" and put it in the root folder of this repository.
+Compress all the .deb files generated into a zip named "gpdpocket-kernel-files.zip" and put it in the root folder of this repository.
 
 ## Step 4: Build Your Respun ISO
 
@@ -163,27 +189,37 @@ Run `./build.sh` script as specified for your desired distro. If you built your 
 
 * Build Xorg ISO (Ubuntu Unity, Linux Mint, XFCE, KDE) running this:
 ```
-./build.sh <iso filenamme>
+./build.sh <iso filename>
 ```
-* Build Gnome based ISO (Ubuntu Gnome, Kali Linux, Gnome based distro) running this:
+* Build Gnome based ISO (Ubuntu Gnome, Elementary OS, Gnome based distro, etc...) running this:
 ```
-./build.sh <iso filenamme> gnome
+./build.sh <iso filename> gnome
 ```
 
 ### Build on Arch-based systems:
 
 * Build Xorg ISO (Ubuntu Unity, Linux Mint, XFCE, KDE) running this:
 ```
-PATH=/usr/sbin:/sbin:/bin:$PATH ./build.sh <iso filenamme>
+PATH=/usr/sbin:/sbin:/bin:$PATH ./build.sh <iso filename>
 ```  
-* BBuild Gnome based ISO (Ubuntu Gnome, Kali Linux, Elementary OS, Gnome based distro) running this:
+* Build Gnome based ISO (Ubuntu Gnome, Elementary OS, Gnome based distro, etc...) running this:
 ```
-PATH=/usr/sbin:/sbin:/bin:$PATH ./build.sh <iso filenamme> gnome
+PATH=/usr/sbin:/sbin:/bin:$PATH ./build.sh <iso filename> gnome
 ```
 
 Gnome desktop environment and derivate (Pantheon of Elementary OS) use a different name convention for monitors.
 The default Xorg configuration won't work and a custom configuration must be used to get everything to work.
 That's the reason of the "gnome" argument for update and build script.
+
+**If you want to use lightDM as Display/Login manager (Suggested) and Unity as Desktop Environment (Suggested) you can use `unity` as flag instead of `gnome` when calling `build.sh` script. This is experimental and may not work as expected but is the suggested environment on GNOME based distros like 17.10 Ubuntu default ISO for the moment.**
+
+### Build Ubuntu 18.04 ISO
+
+Pass `bionicbeaver` parameter to respin script. This will select the correct packages to install on ISO.
+
+```
+./build.sh <iso filename> gnome bionicbeaver
+```
 
 ## Step 5: Install and Update
 
@@ -222,6 +258,15 @@ Gnome desktop environment and derivate (Pantheon of Elementary OS) use a differe
 The default Xorg configuration won't work and a custom configuration must be used to get everything to work.
 That's the reason of the "gnome" argument for update and build script.
 
+**KDE systems:**
+There are reports that on KDE some flags that the script sets in `/etc/environment` may cause graphic glitches and issues. To prevent `update.sh` script from adding those lines, append `kde` flag to `update.sh` script call. 
+Like:
+```
+sudo ./update.sh kde
+```
+
+**Update kernel:**
+
 Update kernel to latest version issuing the following command:
 
 ```
@@ -233,9 +278,11 @@ A kernel update is always recommended.
 # Additional Notes
 ## Downloading Existing ISO's
 
-Here is an already respinned Ubuntu ISO for GPD Pocket
+On the following urls you can find already respinned Ubuntu ISO for GPD Pocket
 
-https://mega.nz/#F!8WpQRZrD!0XHgajeG-QVZTp1Jbjndgw
+https://gpdpocket.cre.ovh/
+
+Mirror: https://mega.nz/#F!8WpQRZrD!0XHgajeG-QVZTp1Jbjndgw
 
 ## BIOS Updates and Original Firmwares
 
@@ -339,7 +386,7 @@ Ampere delivered may vary depending on the remaining battery charge.
 
 The tests have been performed using this [Jokitech USB-C Power Meter Tester Multimeter](https://www.amazon.it/gp/product/B06XJNHFFX/ref=oh_aui_detailpage_o02_s00?ie=UTF8&psc=1) 
 
-Follow link of Anker charger used.
+Follow link of Aukey charger used.
 
 [Amazon UK - AUKEY USB C 29W PD 2.0](https://www.amazon.co.uk/gp/product/B01MYVJELP/ref=oh_aui_detailpage_o07_s00?ie=UTF8&psc=1)
 
@@ -427,6 +474,18 @@ To build latest kernel you just need to run the following script:
 Let it run, it will take a while.
 When it's done you can find the kernel zipped in ```destination/``` folder of this repository.
 
+If you want to customize the .config flags edit the file in `kernel/.config` of this repository and launch kernel build script. Configuration will be copied over the Hans one before building.
+
+If you want to build kernel using the original .config file provided by Hans instead of the one provided in this repository run the script with `keepconfig` argument:
+```
+./docker-build-kernel.sh keepconfig
+```
+
+**If you are using the Docker Hub image remember to always pull latest version before running any of those scripts!**
+```
+docker pull stockmind/gpd-pocket-ubuntu-respin
+```
+
 ## Stop running containers
 
 If you made a mistake and want to stop the running containers in background for respinning or building you can use the stop script:
@@ -470,6 +529,55 @@ Check your system displays settings and move your displays until they are not ov
 
 Disable DPTF in BIOS (Unlocked BIOS might be required), that's what freezes the system before it reaches the hardcoded factory limit of 90 degree. 
 
+## Audio crackling and noise through speakers and headphones
+
+Update your system configuration with latest of this repository.
+You can encounter noises if you use a kernel 4.14-rc5 or below (Hans de Goede kernel) or if your kernel was compiled with `CONFIG_INTEL_ATOMISP=y` (If you are not using Hans de Goede kernel patches or a kernel compiled by his repository below 4.14-rc5).
+Set `CONFIG_INTEL_ATOMISP=y` to `CONFIG_INTEL_ATOMISP=n` and compile/install kernel. Noises should disappear.
+You may still encounter noises while on headphones, in this case check that your HiFi headphones volume configuration is not too high.
+
+Open the following file:
+
+```
+/usr/share/alsa/ucm/chtrt5645/HiFi.conf
+```
+
+
+And check that `cset "name='Headphone Playback Volume'"` is not too high. A good value seems to range between 25 and 30.
+
+Thanks to [Petr Matula @petrmatula](https://github.com/petrmatula190) for discovering and tests!
+
+## Audio jack disconnected on volume over 70-80% (only Linux behaviour) with some headphones
+
+Audio jack may get disconnected on some headsets when volume is set over 70-80%. Windows does't have this problem with official GPD audio drivers. Windows have the same problem only when you using unofficial audio drivers (only one accept way is update audio driver over device manager). 
+This doesn't seems to happen on tiny headphones. When this happen audio start to have a crackling noise again. To fix this you should restart pulseaudio and audio player.
+
+To restart pulseaudio issue the following command
+
+```
+pulseaudio --kill && pulseaudio --start
+```
+or 
+```
+pulseaudio -k
+```
+
+[Video of the problem](https://www.youtube.com/watch?v=Dnm0bOqcVTk) by [Petr Matula @petrmatula](https://github.com/petrmatula190)  (enable subtitles!)
+
+## Google Chrome tearing, glitch or flickering while scrolling or browsing heavy web pages
+
+Chrome doens't seems to behave great with the i915 intel driver, a workaround for the glitches or flickering while scrolling pages or seeing video is to set "GPU Rasterization" to "Force-Enabled for all layers". Quick link: [chrome://flags/#enable-gpu-rasterization](chrome://flags/#enable-gpu-rasterization)
+
+## Graphical glitches on KDE 
+
+Remove/comment those lines from `/etc/environment` and reboot.
+```
+LIBGL_DRI3_DISABLE=1
+COGL_ATLAS_DEFAULT_BLIT_MODE=framebuffer
+```
+
+When you want to update your system in future launch `update.sh` with `kde` flag to prevent re-add of these lines.
+
 ## Why is system UI so big?
 
 The scaling ratio is set to `2` to be able to read on the screen but it sure takes of a lot of space out of the FullHD screen.
@@ -478,16 +586,29 @@ To restore to native pixel resolution you have to edit the scale configuration:
 ```
 sudo nano /etc/X11/Xsession.d/90-scale
 ```
-You have to edit all the values to their default:
+You have to edit all the values to their default like below:
 ```
-gsettings set com.ubuntu.user-interface scale-factor "{'DSI-1': 8, 'DSI1': 8}" // Unity
-gsettings set org.gnome.desktop.interface scaling-factor 1 // Gnome 3
-gsettings set org.gnome.desktop.interface text-scaling-factor 1 // Gnome 3
-gsettings set org.cinnamon.desktop.interface scaling-factor 1 // Cinnamon
-gsettings set org.cinnamon.desktop.interface text-scaling-factor 1 // Cinnamon
+# Unity
+gsettings set com.ubuntu.user-interface scale-factor "{'DSI-1': 8, 'DSI1': 8}" 
+# Gnome 3
+gsettings set org.gnome.desktop.interface scaling-factor 1 
+gsettings set org.gnome.desktop.interface text-scaling-factor 1
+# Cinnamon
+gsettings set org.cinnamon.desktop.interface scaling-factor 1 
+gsettings set org.cinnamon.desktop.interface text-scaling-factor 1
+# Mate
+gsettings set org.mate.font-rendering dpi 96.0
+
 ```
 
-This will affect all the different desktop environments. This might require a log-out, log-in, or reboot to take effect. Restarting the display manager service will also work.
+To make this changes persistent to updates you should copy the current 90-scale and name it with a greather starting number like `91-scale`:
+```
+cp /etc/X11/Xsession.d/90-scale /etc/X11/Xsession.d/91-scale
+```
+
+Then edit the required settings in `/etc/X11/Xsession.d/91-scale`. Future runs of `update.sh` script will not overwrite your custom settings.
+
+The settings in scale file cover all the main desktop environments. Change on settings might require a log-out, log-in, or reboot to take effect. Restarting the display manager service will also work.
 This way you can still read fine (if you have good 👀 ) and have all your pixels back.
 
 ## Touchscreen or display rotation is wrong after wake/sleep or screen lock
@@ -513,6 +634,32 @@ In some system it may happen that tray icon won't show at boot. Try to run in a 
     gpdscreen-indicator
     
 If it works add "gpdscreen-indicator" command to your system "Startup Application" utility to run it at boot.
+
+## GPD Fan daemon fail to run
+
+Hans de Goede pushed a proper fan driver for kernel:
+https://www.reddit.com/r/GPDPocket/comments/7jiv3g/linux_proper_fan_driver_submitted_for_mainline/
+
+The gpdfand daemon fail when the module for GPD fan gets loaded from kernel.
+You can check this by issuing:
+
+    lsmod | grep gpd
+
+On kernel like 4.14 the daemon will run without issues, but i keep the daemon just for the moment, to let fan work on kernels that doesn't ship with the Hans driver included, so it is possible to switch kernels and try different configs without tinker too much with basic things (same approach for bluetooth).
+
+## GPD Fan always spinning on AC
+
+On latest kernels with Hans patches and proper fan driver enabled (gpd-pocket-fan kernel module), fan is set as always spinning at speed 2 (of 3) on AC. That's because when charging it may be desirable to have some extra cooling, as some BIOS versions also do. (Thanks Hans for explanations!)
+
+You can disable this behaviour by setting the speed_on_ac parameter (must be between 0 and 3) for the gpd-pocket-fan module to 0 in GRUB (see setting below). Note the default is 2, which is medium speed, 1 is low speed and 3 is max speed. 0 will not turn on fan on AC when not required (So when temps are fine and below the fan trigger temperatures).
+
+File to edit `/etc/default/grub`:
+
+    GRUB_CMDLINE_LINUX=" ... gpd-pocket-fan.speed_on_ac=0"
+
+Save and run `sudo update-grub` to apply new settings.
+
+This repository default has been set to `gpd-pocket-fan.speed_on_ac=0` so you don't need to worry about this if you use scripts on this repository to setup your GPD Pocket.
 
 # Problem reporting
 

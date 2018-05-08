@@ -1,15 +1,17 @@
 #!/bin/bash
 
+LATESTKERNEL="gpdpocket-20180306-4.16.0-rc3-kernel-files.zip"
+
 mkdir -p update-kernel
 cd update-kernel
 
-if [ ! -f gpdpocket-20171010-kernel-files-audio-fix.zip ]; then
+if [ ! -f gpdpocket-20180103-kernel-files-petrmatula.zip ]; then
 	 echo "Downloading kernel files...."
-	 wget https://bitbucket.org/simone_nunzi/gpdpocket-kernel/downloads/gpdpocket-20171010-kernel-files-audio-fix.zip
+	 wget "https://bitbucket.org/simone_nunzi/gpdpocket-kernel/downloads/$LATESTKERNEL"
 fi
 
 echo "Extracting kernel files..."
-unzip -o gpdpocket-20171010-kernel-files-audio-fix.zip
+unzip -o "$LATESTKERNEL"
 
 echo "Installing kernel..."
 sudo dpkg -i *.deb
